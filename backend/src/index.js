@@ -13,7 +13,15 @@ app.get('/', (req, res) => {
 
 app.get('/simulate', async (req, res) => {
   try {
-    const output = await runSimulation(60000); // run for 60 seconds
+    // allow customization via query string, e.g. /simulate?producers=6&consumers=6&duration=6000
+    const { producers, consumers, duration, capacity } = req.query;
+    const simOptions = {
+      durationMs: duration ? parseInt(duration, 10) : undefined,
+      producersCount: producers ? parseInt(producers, 10) : undefined,
+      consumersCount: consumers ? parseInt(consumers, 10) : undefined,
+      capacity: capacity ? parseInt(capacity, 10) : undefined,
+    };
+    const output = await runSimulation(simOptions);
     res.set('Content-Type', 'text/plain');
     res.send(output);
   } catch (err) {

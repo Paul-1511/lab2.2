@@ -23,9 +23,14 @@ class BoundedBuffer {
   }
 }
 
-function runSimulation(durationMs = 60000) {
+function runSimulation({
+  durationMs = 60000,
+  capacity = 5,
+  producersCount = 2,
+  consumersCount = 2,
+} = {}) {
   return new Promise((resolve) => {
-    const buffer = new BoundedBuffer(5); // capacity 5
+    const buffer = new BoundedBuffer(capacity);
     let running = true;
     let log = [];
 
@@ -51,8 +56,11 @@ function runSimulation(durationMs = 60000) {
       }
     }
 
-    const producers = [producer(1), producer(2)];
-    const consumers = [consumer(1), consumer(2)];
+    const producers = [];
+    for (let i = 1; i <= producersCount; i++) producers.push(producer(i));
+
+    const consumers = [];
+    for (let i = 1; i <= consumersCount; i++) consumers.push(consumer(i));
 
     const start = Date.now();
 
