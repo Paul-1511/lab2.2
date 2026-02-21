@@ -33,17 +33,17 @@ class BoundedBuffer {
 function runSimulationRealtime(io) {
 
   //CONFIGURACIÓN DEL LABORATORIO 
-  const BUFFER_SIZE = 10
+  const BUFFER_SIZE = 5
   const NUM_PRODUCERS = 3      
   const NUM_CONSUMERS = 2      
-  const SIMULATION_TIME = 60000
+  const SIMULATION_TIME = 60000 
 
   const buffer = new BoundedBuffer(BUFFER_SIZE)
 
   let running = true
 
   setTimeout(() => {
-    console.log("Simulación finalizada (60 segundos) :]")
+    console.log("⏹ Simulación finalizada (60 segundos) :]")
     running = false
   }, SIMULATION_TIME)
 
