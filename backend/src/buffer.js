@@ -1,67 +1,78 @@
 class BoundedBuffer {
   constructor(maxSize) {
-    this.queue = [];
-    this.maxSize = maxSize;
+    this.queue = []
+    this.maxSize = maxSize
   }
 
-  async put(item) {
-    if (this.queue.length >= this.maxSize) {
-      // buffer full, wait until space available
-      await new Promise((r) => setTimeout(r, 50));
-      return this.put(item);
+  async put(item, producerId) {
+    console.log(`Productor ${producerId} intentando entrar a sección crítica`)
+
+    while (this.queue.length >= this.maxSize) {
+      await new Promise((r) => setTimeout(r, 50))
     }
-    this.queue.push(item);
+
+    console.log(`Productor ${producerId} ENTRÓ a sección crítica`)
+    this.queue.push(item)
+    console.log(`Productor ${producerId} SALIÓ de sección crítica`)
   }
 
-  async take() {
-    if (this.queue.length === 0) {
-      // empty, wait until an item appears
-      await new Promise((r) => setTimeout(r, 50));
-      return this.take();
+  async take(consumerId) {
+    console.log(`Consumidor ${consumerId} intentando entrar a sección crítica`)
+
+    while (this.queue.length === 0) {
+      await new Promise((r) => setTimeout(r, 50))
     }
-    return this.queue.shift();
+
+    console.log(`Consumidor ${consumerId} ENTRÓ a sección crítica`)
+    const item = this.queue.shift()
+    console.log(`Consumidor ${consumerId} SALIÓ de sección crítica`)
+    return item
   }
 }
 
-function runSimulation(durationMs = 60000) {
-  return new Promise((resolve) => {
-    const buffer = new BoundedBuffer(5); // capacity 5
-    let running = true;
-    let log = [];
+function runSimulationRealtime(io) {
 
-    function logEvent(evt) {
-      const t = ((Date.now() - start) / 1000).toFixed(2);
-      log.push(`${t}s: ${evt}`);
+  //CONFIGURACIÓN DEL LABORATORIO 
+  const BUFFER_SIZE = 10
+  const NUM_PRODUCERS = 3      
+  const NUM_CONSUMERS = 2      
+  const SIMULATION_TIME = 60000
+
+  const buffer = new BoundedBuffer(BUFFER_SIZE)
+
+  let running = true
+
+  setTimeout(() => {
+    console.log("Simulación finalizada (60 segundos) :]")
+    running = false
+  }, SIMULATION_TIME)
+
+  async function producer(id) {
+    while (running) {
+      const item = `P${id}-${Math.floor(Math.random() * 100)}`
+      await buffer.put(item, id)
+      io.emit("bufferUpdate", buffer.queue)
+      await new Promise((r) => setTimeout(r, 500))
     }
+  }
 
-    async function producer(id) {
-      while (running) {
-        const item = `item-${id}-${Math.random().toString(36).substr(2, 4)}`;
-        await buffer.put(item);
-        logEvent(`producer ${id} produced ${item} (size=${buffer.queue.length})`);
-        await new Promise((r) => setTimeout(r, 100 + Math.random() * 400));
-      }
+  async function consumer(id) {
+    while (running) {
+      await buffer.take(id)
+      io.emit("bufferUpdate", buffer.queue)
+      await new Promise((r) => setTimeout(r, 700))
     }
+  }
 
-    async function consumer(id) {
-      while (running) {
-        const item = await buffer.take();
-        logEvent(`consumer ${id} consumed ${item} (size=${buffer.queue.length})`);
-        await new Promise((r) => setTimeout(r, 100 + Math.random() * 400));
-      }
-    }
+  // Crear productores configurables
+  for (let i = 1; i <= NUM_PRODUCERS; i++) {
+    producer(i)
+  }
 
-    const producers = [producer(1), producer(2)];
-    const consumers = [consumer(1), consumer(2)];
-
-    const start = Date.now();
-
-    setTimeout(() => {
-      running = false;
-      // wait a little to let loops finish current iteration
-      setTimeout(() => resolve(log.join("\n")), 500);
-    }, durationMs);
-  });
+  // Crear consumidores configurables
+  for (let i = 1; i <= NUM_CONSUMERS; i++) {
+    consumer(i)
+  }
 }
 
-module.exports = { runSimulation };
+module.exports = { runSimulationRealtime }

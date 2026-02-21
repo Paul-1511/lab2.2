@@ -1,28 +1,30 @@
-const express = require('express');
-const app = express();
-const port = process.env.PORT || 3000;
+const express = require("express")
+const http = require("http")
+const { Server } = require("socket.io")
+const cors = require("cors")
+const { runSimulationRealtime } = require("./buffer")
 
-app.use(express.json());
+const app = express()
+app.use(cors())
 
-// simulation route for bounded buffer visualization project
-const { runSimulation } = require('./buffer');
+const server = http.createServer(app)
 
-app.get('/', (req, res) => {
-  res.send('Hello from the Node.js backend!');
-});
+const io = new Server(server, {
+  cors: { origin: "*" }
+})
 
-app.get('/simulate', async (req, res) => {
-  try {
-    const output = await runSimulation(60000); // run for 60 seconds
-    res.set('Content-Type', 'text/plain');
-    res.send(output);
-  } catch (err) {
-    res.status(500).send(err.toString());
+let simulationStarted = false
+
+io.on("connection", (socket) => {
+  console.log("Cliente conectado")
+
+  // Iniciar simulación SOLO una vez
+  if (!simulationStarted) {
+    runSimulationRealtime(io)
+    simulationStarted = true
   }
-});
+})
 
-// Additional routes can be added here
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+server.listen(3000, () => {
+  console.log("Server is running on port 3000")
+})
